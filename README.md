@@ -1,3 +1,5 @@
+> English | [简体中文](README.zh-CN.md)
+
 # parley
 
 Local CLI for exporting LLM conversations to Markdown. One command, one
