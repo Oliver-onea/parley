@@ -23,6 +23,7 @@ import { exportDeepSeekShare } from "./providers/export_deepseek_share.mjs";
 import { exportGeminiShare } from "./providers/export_gemini_share.mjs";
 import { exportGrokShare } from "./providers/export_grok_share.mjs";
 import { exportKimiShare } from "./providers/export_kimi_share.mjs";
+import { exportQwenShare } from "./providers/export_qwen_share.mjs";
 
 export { sanitizeSegment };
 export { idFromInput };
@@ -34,6 +35,7 @@ const COMMAND_ALIASES = new Map([
   ["gemini", "gemini"],
   ["kimi", "kimi"],
   ["grok", "grok"],
+  ["qwen", "qwen"],
   ["claude", "claude-share"],
   ["claude-share", "claude-share"],
   ["claude-cache", "claude-cache"],
@@ -84,6 +86,7 @@ Usage:
   parley kimi <kimi-share-url> [--output file.md] [--no-assets]
   parley claude <claude-share-url>
   parley grok <grok-share-url> [--no-assets]
+  parley qwen <qwen-share-url|uuid> [--output file.md]
   parley claude-cache [--limit 6] [--conversation uuid] [--cache-dir dir]
   parley claude-local --title "Conversation title"
   parley claude-local --session local_session_id
@@ -96,6 +99,7 @@ Examples:
   parley https://www.kimi.com/share/<share-id>
   parley https://claude.ai/share/<share-id>
   parley https://grok.com/share/<share-id>
+  parley https://chat.qwen.ai/s/<share-id>
   parley claude-cache --limit 10 --out-dir ./chat-exports
 
 Notes:
@@ -121,6 +125,7 @@ export function inferProvider(input) {
   if (/kimi\.com\/share\//i.test(value)) return "kimi";
   if (/claude\.ai\/share\//i.test(value)) return "claude-share";
   if (/grok\.com\/share\//i.test(value)) return "grok";
+  if (/chat\.qwen\.ai\/s\//i.test(value)) return "qwen";
   return "";
 }
 
@@ -205,6 +210,9 @@ async function runShareProvider(parsed) {
   }
   if (parsed.command === "grok") {
     return exportGrokShare({ input: parsed.input, output, downloadAssets: parsed.assets });
+  }
+  if (parsed.command === "qwen") {
+    return exportQwenShare({ input: parsed.input, output });
   }
   return exportClaudeShare({ input: parsed.input, output });
 }

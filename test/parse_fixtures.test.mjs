@@ -27,6 +27,10 @@ import {
   parseGrokShare,
   renderMarkdown as renderGrokMarkdown,
 } from "../src/providers/export_grok_share.mjs";
+import {
+  parseQwenShare,
+  renderMarkdown as renderQwenMarkdown,
+} from "../src/providers/export_qwen_share.mjs";
 
 function readFixture(provider, filename) {
   return fs.readFile(new URL(`./fixtures/${provider}/${filename}`, import.meta.url), "utf8");
@@ -209,4 +213,41 @@ test("grok fixture: sorts responses and preserves attachment metadata", async ()
   assert.match(markdown, /# Fixture Grok Share/);
   assert.match(markdown, /### 01\. You[\s\S]*First question[\s\S]*### 02\. Grok[\s\S]*searched image card #7/);
   assert.match(markdown, /- diagram\.png \(image\/png\) \| not downloaded/);
+});
+
+test("qwen fixture: follows the active branch and uses answer content phases", async () => {
+  const payload = JSON.parse(await readFixture("qwen", "payload.json"));
+  const parsed = parseQwenShare(payload.data, { shareId: payload.data.id });
+
+  assert.equal(parsed.title, "Fixture Qwen Share");
+  assert.equal(parsed.messages.length, 3);
+  assert.deepEqual(
+    parsed.messages.map((message) => message.id),
+    ["user-root", "assistant-current", "assistant-followup"],
+  );
+  assert.deepEqual(
+    parsed.messages.map((message) => message.text),
+    [
+      "Explain the function.",
+      "## Answer\n\nMath: \\(x^2\\)",
+      "_(no answer content exposed; only non-answer phases are present)_",
+    ],
+  );
+  assert.deepEqual(parsed.messages[0].files[0], {
+    id: "file-qwen",
+    name: "notes.txt",
+    type: "text/plain",
+    size: 2048,
+    status: "ready",
+  });
+
+  const markdown = renderQwenMarkdown(parsed);
+  assert.match(markdown, /# Fixture Qwen Share/);
+  assert.match(markdown, /- Model: qwen3-235b-a22b/);
+  assert.match(markdown, /- Created: 2024-03-09T16:00:00\.000Z/);
+  assert.match(markdown, /### 01\. You[\s\S]*Explain the function\.[\s\S]*### 02\. Qwen/);
+  assert.match(markdown, /Math: \\\(x\^2\\\)/);
+  assert.match(markdown, /notes\.txt \| text\/plain \| 2\.0 KB \| id file-qwen \| status ready/);
+  assert.match(markdown, /no answer content exposed; only non-answer phases are present/);
+  assert.doesNotMatch(markdown, /Wrong branch|Hidden reasoning|This must not be exported/);
 });

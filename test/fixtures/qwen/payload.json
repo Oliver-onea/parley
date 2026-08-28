@@ -1,0 +1,83 @@
+{
+  "success": true,
+  "data": {
+    "id": "00000000-0000-4000-8000-000000000006",
+    "title": "Fixture Qwen Share",
+    "created_at": 1710000000,
+    "updated_at": 1710000060,
+    "currentId": "assistant-followup",
+    "currentResponseIds": ["assistant-current", "assistant-followup"],
+    "chat": {
+      "history": {
+        "messages": {
+          "assistant-followup": {
+            "id": "assistant-followup",
+            "role": "assistant",
+            "parentId": "assistant-current",
+            "childrenIds": [],
+            "timestamp": 1710000003,
+            "content": "",
+            "content_list": [
+              {
+                "phase": "thinking",
+                "content": "This must not be exported"
+              }
+            ],
+            "modelName": "qwen3-235b-a22b"
+          },
+          "assistant-other": {
+            "id": "assistant-other",
+            "role": "assistant",
+            "parentId": "user-root",
+            "childrenIds": [],
+            "timestamp": 1710000004,
+            "content": "",
+            "content_list": [
+              {
+                "phase": "answer",
+                "content": "Wrong branch"
+              }
+            ],
+            "model": "wrong-model"
+          },
+          "assistant-current": {
+            "id": "assistant-current",
+            "role": "assistant",
+            "parentId": "user-root",
+            "childrenIds": ["assistant-followup"],
+            "timestamp": 1710000002,
+            "content": "",
+            "content_list": [
+              {
+                "phase": "thinking",
+                "content": "Hidden reasoning"
+              },
+              {
+                "phase": "answer",
+                "content": "## Answer\n\nMath: \\(x^2\\)"
+              }
+            ],
+            "modelName": "qwen3-235b-a22b"
+          },
+          "user-root": {
+            "id": "user-root",
+            "role": "user",
+            "parentId": null,
+            "childrenIds": ["assistant-other", "assistant-current"],
+            "timestamp": 1710000001,
+            "content": "Explain the function.",
+            "files": [
+              {
+                "id": "file-qwen",
+                "name": "notes.txt",
+                "type": "text/plain",
+                "size": 2048,
+                "status": "ready"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

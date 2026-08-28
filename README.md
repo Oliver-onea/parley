@@ -14,6 +14,7 @@ Supported inputs:
 - Kimi public share URLs
 - Claude public share URLs
 - Grok public share URLs
+- Qwen public share URLs
 - Claude Desktop local-agent sessions
 - Claude Desktop HTTP cache conversations
 
@@ -51,6 +52,7 @@ node bin/parley.mjs https://share.gemini.google/<share-id>
 node bin/parley.mjs https://www.kimi.com/share/<share-id>
 node bin/parley.mjs https://claude.ai/share/<share-id>
 node bin/parley.mjs https://grok.com/share/<share-id>
+node bin/parley.mjs https://chat.qwen.ai/s/<share-id>
 ```
 
 Or link it into your PATH once:
@@ -70,6 +72,7 @@ parley gemini <gemini-share-url> [--no-assets]
   parley kimi <kimi-share-url> [--output file.md] [--no-assets]
 parley claude <claude-share-url>
 parley grok <grok-share-url> [--no-assets]
+parley qwen <qwen-share-url|uuid> [--output file.md]
 parley claude-cache [--limit 6] [--conversation uuid] [--cache-dir dir]
 parley claude-local --title "Conversation title"
 parley claude-local --session <local-session-id>
@@ -133,6 +136,8 @@ exports/
   grok/
     grok_share_<id>.md
     grok_share_<id>_assets/
+  qwen/
+    qwen_share_<id>.md
 ```
 
 All timestamps in exported Markdown are ISO 8601 UTC, so output is identical
@@ -193,6 +198,9 @@ What each platform's public share actually exposes, and what parley does:
   URL. parley downloads attachments into `<output>_assets/` and inlines them
   (on by default; `--no-assets` skips). Failures are recorded in the assets
   manifest.
+- **Qwen** — the public share API exposes user-file metadata but no observed
+  public download URLs. parley lists the file names and metadata without
+  downloading file content.
 
 ## Known Limits
 

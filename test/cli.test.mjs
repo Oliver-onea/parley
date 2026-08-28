@@ -26,6 +26,10 @@ test("infers provider from public share URLs", () => {
     "claude-share",
   );
   assert.equal(inferProvider("https://grok.com/share/bGVnYWN5_00000000-0000"), "grok");
+  assert.equal(
+    inferProvider("https://chat.qwen.ai/s/00000000-0000-4000-8000-000000000006?fev=1"),
+    "qwen",
+  );
   assert.equal(inferProvider("https://example.com/not-a-share"), "");
 });
 
@@ -57,6 +61,10 @@ test("parses commands, aliases, and options", () => {
   const inferred = parseCli(["https://claude.ai/share/abc", "--no-assets"]);
   assert.equal(inferred.command, "claude-share");
   assert.equal(inferred.assets, false);
+
+  const qwen = parseCli(["qwen", "00000000-0000-4000-8000-000000000006"]);
+  assert.equal(qwen.command, "qwen");
+  assert.equal(qwen.input, "00000000-0000-4000-8000-000000000006");
 });
 
 test("rejects unknown options and missing option values", () => {
@@ -91,6 +99,7 @@ test("builds the same default output path for every provider and input form", ()
     ["kimi", ["kimi"], "kimi_share"],
     ["claude-share", ["claude", "share"], "claude_share"],
     ["grok", ["grok"], "grok_share"],
+    ["qwen", ["qwen"], "qwen_share"],
   ];
   const inputs = [
     ["https://example.test/share/url-id", "url-id"],

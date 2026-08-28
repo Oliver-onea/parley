@@ -12,6 +12,7 @@
 - Kimi 公开分享 URL
 - Claude 公开分享 URL
 - Grok 公开分享 URL
+- Qwen 公开分享 URL
 - Claude Desktop 本地代理会话
 - Claude Desktop HTTP 缓存对话
 
@@ -43,6 +44,7 @@ node bin/parley.mjs https://share.gemini.google/<share-id>
 node bin/parley.mjs https://www.kimi.com/share/<share-id>
 node bin/parley.mjs https://claude.ai/share/<share-id>
 node bin/parley.mjs https://grok.com/share/<share-id>
+node bin/parley.mjs https://chat.qwen.ai/s/<share-id>
 ```
 
 也可以一次性链接到 PATH：
@@ -62,6 +64,7 @@ parley gemini <gemini-share-url> [--no-assets]
 parley kimi <kimi-share-url> [--output file.md] [--no-assets]
 parley claude <claude-share-url>
 parley grok <grok-share-url> [--no-assets]
+parley qwen <qwen-share-url|uuid> [--output file.md]
 parley claude-cache [--limit 6] [--conversation uuid] [--cache-dir dir]
 parley claude-local --title "Conversation title"
 parley claude-local --session <local-session-id>
@@ -122,6 +125,8 @@ exports/
   grok/
     grok_share_<id>.md
     grok_share_<id>_assets/
+  qwen/
+    qwen_share_<id>.md
 ```
 
 导出的 Markdown 中的所有时间戳均为 ISO 8601 UTC，因此不同机器和语言环境下的输出完全一致。
@@ -153,6 +158,7 @@ Claude 缓存导出器读取本地 HTTP 缓存文件以恢复对话 JSON 和已�
 - **Claude** —— 公开分享会完全隐藏上传的文件（“共享对话中的文件已隐藏”），官方分享页面也不会显示它们。parley 会在每条受影响的消息旁标注隐藏文件数量。要恢复 Claude 附件，请使用 `claude-cache`（本地 Claude Desktop HTTP 缓存）或带已认证 `CLAUDE_COOKIE` 的 `claude-assets --download-assets`。
 - **DeepSeek** —— 分享 API 会暴露文件元数据（`file_name`、`file_size`、`id`、`previewable`），但不提供下载 URL；匿名文件端点返回的是应用外壳而非文件字节。parley 因此会列出每个文件的元数据（名称、大小、id），并标注该内容无法从公开分享下载。
 - **Kimi** —— 脱水后的分享状态会暴露每个 `file` 块的元数据以及一个签名的 `signUrl`，它会 307 重定向到公开的 Volcengine 对象存储 URL。parley 默认将附件下载到 `<output>_assets/` 并内嵌（`--no-assets` 可跳过）。失败会记录到资源清单。
+- **Qwen** —— 公开分享 API 会暴露用户文件的元数据，但没有观察到公开下载 URL。parley 会列出文件名和元数据，不下载文件内容。
 
 ## 已知限制
 

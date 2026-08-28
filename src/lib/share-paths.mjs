@@ -9,6 +9,7 @@ const SHARE_PROVIDERS = {
   kimi: { outputParts: ["kimi"], prefix: "kimi_share" },
   "claude-share": { outputParts: ["claude", "share"], prefix: "claude_share" },
   grok: { outputParts: ["grok"], prefix: "grok_share" },
+  qwen: { outputParts: ["qwen"], prefix: "qwen_share" },
 };
 
 function looksLikeUrl(value) {
