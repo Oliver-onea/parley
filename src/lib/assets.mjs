@@ -3,6 +3,32 @@
 
 import path from "node:path";
 
+import { writeFileAtomic } from "./paths.mjs";
+
+export function createAssetManifest(outputPath) {
+  const outputBase = outputPath.replace(/\.md$/i, "");
+  return {
+    output: outputPath,
+    assetsDir: `${outputBase}_assets`,
+    manifestPath: `${outputBase}_assets_manifest.json`,
+    downloadedAt: new Date().toISOString(),
+    assets: [],
+  };
+}
+
+export function appendAssetRecord(manifest, record) {
+  manifest.assets.push(record);
+}
+
+export function updateAssetManifestCounts(manifest) {
+  manifest.downloaded = manifest.assets.filter((item) => item.status === "downloaded").length;
+  manifest.failed = manifest.assets.filter((item) => item.status === "failed").length;
+}
+
+export async function writeAssetManifest(manifest) {
+  await writeFileAtomic(manifest.manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
 export function filenameFromContentDisposition(value) {
   const utf8 = String(value || "").match(/filename\*=UTF-8''([^;]+)/i);
   const regular = String(value || "").match(/filename="?([^";]+)"?/i);

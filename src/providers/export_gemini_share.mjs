@@ -8,10 +8,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import {
+  appendAssetRecord,
+  createAssetManifest,
   extensionFromBuffer,
   extensionFromContentType,
   extensionFromUrl,
   filenameFromContentDisposition,
+  updateAssetManifestCounts,
+  writeAssetManifest,
 } from "../lib/assets.mjs";
 import { fetchText, fetchWithRetry } from "../lib/http.mjs";
 import { linkTarget } from "../lib/markdown.mjs";
@@ -498,26 +502,17 @@ async function localizeMarkdownAssets(markdown, parsed, outputPath) {
   const googleUrls = collectGoogleAttachmentUrls(parsed);
   if (!urls.length && !googleUrls.length) return { markdown, manifest: null };
 
-  const outputBase = outputPath.replace(/\.md$/i, "");
   const markdownDir = path.dirname(outputPath);
-  const assetsDir = `${outputBase}_assets`;
-  const manifestPath = `${outputBase}_assets_manifest.json`;
-  const manifest = {
-    output: outputPath,
-    assetsDir,
-    manifestPath,
-    downloadedAt: new Date().toISOString(),
-    assets: [],
-  };
+  const manifest = createAssetManifest(outputPath);
 
-  await ensureDir(assetsDir);
+  await ensureDir(manifest.assetsDir);
   for (const [index, url] of urls.entries()) {
     try {
-      const asset = await downloadAsset(url, index, assetsDir, markdownDir);
-      manifest.assets.push(asset);
+      const asset = await downloadAsset(url, index, manifest.assetsDir, markdownDir);
+      appendAssetRecord(manifest, asset);
       markdown = markdown.split(url).join(linkTarget(asset.relativePath));
     } catch (error) {
-      manifest.assets.push({
+      appendAssetRecord(manifest, {
         index: index + 1,
         url,
         status: "failed",
@@ -529,13 +524,13 @@ async function localizeMarkdownAssets(markdown, parsed, outputPath) {
   for (const [index, url] of googleUrls.entries()) {
     const ordinal = urls.length + index;
     try {
-      const asset = await downloadGoogleAttachment(url, ordinal, assetsDir, markdownDir);
-      manifest.assets.push(asset);
+      const asset = await downloadGoogleAttachment(url, ordinal, manifest.assetsDir, markdownDir);
+      appendAssetRecord(manifest, asset);
       markdown = markdown
         .split(`- ${url}`)
         .join(`- [${asset.filename}](${linkTarget(asset.relativePath)}) ([source](${url}))`);
     } catch (error) {
-      manifest.assets.push({
+      appendAssetRecord(manifest, {
         index: ordinal + 1,
         kind: "google_attachment",
         url,
@@ -545,8 +540,7 @@ async function localizeMarkdownAssets(markdown, parsed, outputPath) {
     }
   }
 
-  manifest.downloaded = manifest.assets.filter((item) => item.status === "downloaded").length;
-  manifest.failed = manifest.assets.filter((item) => item.status === "failed").length;
+  updateAssetManifestCounts(manifest);
   return { markdown, manifest };
 }
 
@@ -571,7 +565,7 @@ export async function exportGeminiShare({ input, output = "", downloadAssets = t
   await ensureParent(outputPath);
   await writeFileAtomic(outputPath, markdown);
   if (bundle?.manifest) {
-    await writeFileAtomic(bundle.manifest.manifestPath, `${JSON.stringify(bundle.manifest, null, 2)}\n`);
+    await writeAssetManifest(bundle.manifest);
   }
 
   return {

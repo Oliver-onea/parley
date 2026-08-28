@@ -9,9 +9,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import {
+  appendAssetRecord,
+  createAssetManifest,
   extensionFromBuffer,
   extensionFromContentType,
   extensionFromUrl,
+  updateAssetManifestCounts,
+  writeAssetManifest,
 } from "../lib/assets.mjs";
 import { fetchText, fetchWithRetry } from "../lib/http.mjs";
 import { linkTarget } from "../lib/markdown.mjs";
@@ -143,19 +147,11 @@ async function downloadGrokAssets(parsed, outputPath) {
   }
   if (!wanted.length) return null;
 
-  const outputBase = outputPath.replace(/\.md$/i, "");
   const markdownDir = path.dirname(outputPath);
-  const assetsDir = `${outputBase}_assets`;
-  const manifest = {
-    output: outputPath,
-    assetsDir,
-    manifestPath: `${outputBase}_assets_manifest.json`,
-    downloadedAt: new Date().toISOString(),
-    assets: [],
-  };
+  const manifest = createAssetManifest(outputPath);
   const byFileId = new Map();
 
-  await ensureDir(assetsDir);
+  await ensureDir(manifest.assetsDir);
   for (const [ordinal, item] of wanted.entries()) {
     const record = { index: ordinal + 1, kind: item.kind, fileId: item.fileId, name: item.fileName };
     try {
@@ -181,7 +177,7 @@ async function downloadGrokAssets(parsed, outputPath) {
         extensionFromUrl(url) ||
         ".bin";
       const filename = `${String(ordinal + 1).padStart(3, "0")}_${baseName}${ext}`;
-      const filePath = path.join(assetsDir, filename);
+      const filePath = path.join(manifest.assetsDir, filename);
       await fs.writeFile(filePath, buffer);
       Object.assign(record, {
         status: "downloaded",
@@ -195,11 +191,10 @@ async function downloadGrokAssets(parsed, outputPath) {
     } catch (error) {
       Object.assign(record, { status: "failed", error: error.message || String(error) });
     }
-    manifest.assets.push(record);
+    appendAssetRecord(manifest, record);
   }
 
-  manifest.downloaded = manifest.assets.filter((item) => item.status === "downloaded").length;
-  manifest.failed = manifest.assets.filter((item) => item.status === "failed").length;
+  updateAssetManifestCounts(manifest);
   return { manifest, byFileId };
 }
 
@@ -300,10 +295,7 @@ export async function exportGrokShare({ input, output = "", downloadAssets = tru
   await ensureParent(outputPath);
   await writeFileAtomic(outputPath, markdown);
   if (assets) {
-    await writeFileAtomic(
-      assets.manifest.manifestPath,
-      `${JSON.stringify(assets.manifest, null, 2)}\n`,
-    );
+    await writeAssetManifest(assets.manifest);
   }
 
   return {

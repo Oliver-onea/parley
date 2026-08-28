@@ -9,9 +9,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import {
+  appendAssetRecord,
+  createAssetManifest,
   extensionFromBuffer,
   extensionFromContentType,
   extensionFromUrl,
+  updateAssetManifestCounts,
+  writeAssetManifest,
 } from "../lib/assets.mjs";
 import { fetchText, fetchWithRetry, USER_AGENT } from "../lib/http.mjs";
 import { fenced, linkTarget } from "../lib/markdown.mjs";
@@ -318,19 +322,11 @@ function collectAttachments(messages) {
 // object-storage URL. Download each into <output>_assets/, mirroring the
 // ChatGPT asset handling. Returns { manifest, byAttachmentId }.
 async function downloadAttachments({ attachments, outputPath }) {
-  const outputBase = outputPath.replace(/\.md$/i, "");
   const markdownDir = path.dirname(outputPath);
-  const assetsDir = `${outputBase}_assets`;
-  const manifest = {
-    output: outputPath,
-    assetsDir,
-    manifestPath: `${outputBase}_assets_manifest.json`,
-    downloadedAt: new Date().toISOString(),
-    assets: [],
-  };
+  const manifest = createAssetManifest(outputPath);
   const byAttachmentId = new Map();
 
-  await ensureDir(assetsDir);
+  await ensureDir(manifest.assetsDir);
   for (const att of attachments) {
     const record = {
       index: att.ordinal,
@@ -361,7 +357,7 @@ async function downloadAttachments({ attachments, outputPath }) {
         extensionFromUrl(att.signUrl) ||
         ".bin";
       const filename = `${String(att.ordinal).padStart(3, "0")}_${baseName}${ext}`;
-      const filePath = path.join(assetsDir, filename);
+      const filePath = path.join(manifest.assetsDir, filename);
       await fs.writeFile(filePath, buffer);
       Object.assign(record, {
         status: "downloaded",
@@ -374,11 +370,10 @@ async function downloadAttachments({ attachments, outputPath }) {
     } catch (error) {
       Object.assign(record, { status: "failed", error: error.message || String(error) });
     }
-    manifest.assets.push(record);
+    appendAssetRecord(manifest, record);
   }
 
-  manifest.downloaded = manifest.assets.filter((item) => item.status === "downloaded").length;
-  manifest.failed = manifest.assets.filter((item) => item.status === "failed").length;
+  updateAssetManifestCounts(manifest);
   return { manifest, byAttachmentId };
 }
 
@@ -493,7 +488,7 @@ export async function exportKimiShare({ input, output = "", downloadAssets = tru
   await ensureParent(outputPath);
   await writeFileAtomic(outputPath, markdown);
   if (assets) {
-    await writeFileAtomic(assets.manifest.manifestPath, `${JSON.stringify(assets.manifest, null, 2)}\n`);
+    await writeAssetManifest(assets.manifest);
   }
 
   return {

@@ -9,9 +9,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import {
+  appendAssetRecord,
+  createAssetManifest,
   extensionFromBuffer,
   extensionFromContentType,
   extensionFromUrl,
+  updateAssetManifestCounts,
+  writeAssetManifest,
 } from "../lib/assets.mjs";
 import { fetchText, fetchWithRetry } from "../lib/http.mjs";
 import { fenced, linkTarget, tableCell } from "../lib/markdown.mjs";
@@ -365,19 +369,11 @@ async function resolveShareFileUrl(fileId, shareId, cookies) {
 }
 
 async function downloadShareAssets({ fileIds, attachmentsById, shareId, cookies, outputPath }) {
-  const outputBase = outputPath.replace(/\.md$/i, "");
   const markdownDir = path.dirname(outputPath);
-  const assetsDir = `${outputBase}_assets`;
-  const manifest = {
-    output: outputPath,
-    assetsDir,
-    manifestPath: `${outputBase}_assets_manifest.json`,
-    downloadedAt: new Date().toISOString(),
-    assets: [],
-  };
+  const manifest = createAssetManifest(outputPath);
   const byFileId = new Map();
 
-  await ensureDir(assetsDir);
+  await ensureDir(manifest.assetsDir);
   for (const [ordinal, fileId] of fileIds.entries()) {
     const meta = attachmentsById.get(fileId) || {};
     const record = {
@@ -406,7 +402,7 @@ async function downloadShareAssets({ fileIds, attachmentsById, shareId, cookies,
         extensionFromUrl(downloadUrl) ||
         ".bin";
       const filename = `${String(ordinal + 1).padStart(3, "0")}_${baseName}${ext}`;
-      const filePath = path.join(assetsDir, filename);
+      const filePath = path.join(manifest.assetsDir, filename);
       await fs.writeFile(filePath, buffer);
       Object.assign(record, {
         status: "downloaded",
@@ -419,11 +415,10 @@ async function downloadShareAssets({ fileIds, attachmentsById, shareId, cookies,
     } catch (error) {
       Object.assign(record, { status: "failed", error: error.message || String(error) });
     }
-    manifest.assets.push(record);
+    appendAssetRecord(manifest, record);
   }
 
-  manifest.downloaded = manifest.assets.filter((item) => item.status === "downloaded").length;
-  manifest.failed = manifest.assets.filter((item) => item.status === "failed").length;
+  updateAssetManifestCounts(manifest);
   return { manifest, byFileId };
 }
 
@@ -609,7 +604,7 @@ export async function exportChatGptShare({ input, output = "", downloadAssets = 
   await ensureParent(outputPath);
   await writeFileAtomic(outputPath, markdown);
   if (assets) {
-    await writeFileAtomic(assets.manifest.manifestPath, `${JSON.stringify(assets.manifest, null, 2)}\n`);
+    await writeAssetManifest(assets.manifest);
   }
 
   return {
