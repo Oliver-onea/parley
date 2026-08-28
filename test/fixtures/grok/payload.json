@@ -1,0 +1,43 @@
+{
+  "conversation": {
+    "conversationId": "grok-conversation-fixture",
+    "title": "Fixture Grok Share",
+    "createTime": "2026-01-01T00:00:00Z",
+    "modifyTime": "2026-01-01T00:01:00Z"
+  },
+  "responses": [
+    {
+      "responseId": "response-assistant",
+      "sender": "assistant",
+      "createTime": "2026-01-01T00:01:00Z",
+      "model": "grok-4",
+      "outputChunks": [
+        {
+          "text": {
+            "text": "Answer <grok:render card_id=\"fixture\" card_type=\"image_card\" type=\"render_searched_image\"><argument name=\"image_id\">7</argument></grok:render> done"
+          }
+        }
+      ]
+    },
+    {
+      "responseId": "response-human",
+      "sender": "human",
+      "createTime": "2026-01-01T00:00:00Z",
+      "inputChunks": [
+        {
+          "text": {
+            "text": "First question"
+          }
+        }
+      ],
+      "fileAttachmentsMetadata": [
+        {
+          "fileMetadataId": "file-grok",
+          "fileMimeType": "image/png",
+          "fileName": "diagram.png",
+          "fileUri": "users/fixture/file-grok/content"
+        }
+      ]
+    }
+  ]
+}

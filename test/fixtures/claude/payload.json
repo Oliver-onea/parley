@@ -1,0 +1,36 @@
+{
+  "uuid": "00000000-0000-4000-8000-000000000001",
+  "name": "Fixture Claude Share",
+  "chat_messages": [
+    {
+      "uuid": "message-assistant",
+      "index": 1,
+      "sender": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Second answer"
+        }
+      ],
+      "attachments": [
+        {
+          "file_name": "notes.txt",
+          "size": 128,
+          "file_type": "text/plain"
+        }
+      ]
+    },
+    {
+      "uuid": "message-human",
+      "index": 0,
+      "sender": "human",
+      "content": [
+        {
+          "type": "text",
+          "text": "First question"
+        }
+      ],
+      "files": []
+    }
+  ]
+}

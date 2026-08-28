@@ -1,0 +1,36 @@
+{
+  "code": 0,
+  "data": {
+    "biz_data": {
+      "title": "Fixture DeepSeek Share",
+      "messages": [
+        {
+          "message_id": "message-user",
+          "role": "USER",
+          "content": "First question",
+          "inserted_at": 1710000000,
+          "thinking_content": null,
+          "search_results": null,
+          "files": [
+            {
+              "id": "file-deepseek",
+              "status": "SUCCESS",
+              "file_name": "table.csv",
+              "file_size": 4096,
+              "previewable": false
+            }
+          ]
+        },
+        {
+          "message_id": "message-assistant",
+          "role": "ASSISTANT",
+          "content": "Second answer",
+          "inserted_at": 1710000001,
+          "thinking_content": null,
+          "search_results": null,
+          "files": []
+        }
+      ]
+    }
+  }
+}

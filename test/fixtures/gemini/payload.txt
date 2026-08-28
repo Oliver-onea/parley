@@ -1,0 +1,1 @@
+[["wrb.fr","ujx1Bf","[[null,[[\"turn-1\",null,[[\"Question one\",\"https://lh3.googleusercontent.com/fixture-image\",\"https://docs.google.com/document/d/fixture-doc/edit\"]],[[[null,[\"Answer one\"]]]],[1710000000]],[\"turn-2\",\"turn-1\",[[\"Question two\"]],[[[null,[\"Answer two\"]]]],[1710000001]]],[null,\"Fixture Gemini Share\"],\"gemini-fixture\",[1710000000]]]" ]]
