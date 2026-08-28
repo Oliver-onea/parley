@@ -21,6 +21,7 @@ import { fetchText, fetchWithRetry } from "../lib/http.mjs";
 import { linkTarget } from "../lib/markdown.mjs";
 import { ensureDir, ensureParent, posixRelative, writeFileAtomic } from "../lib/paths.mjs";
 import { isMainModule, runMain } from "../lib/proc.mjs";
+import { defaultShareOutputPath } from "../lib/share-paths.mjs";
 import { decodeHtml, sanitizeFilename } from "../lib/text.mjs";
 import { isoFromUnixSeconds } from "../lib/time.mjs";
 
@@ -327,15 +328,6 @@ export function parseGeminiPayload(inner, fetchMeta = {}) {
   return { title, shareId, published, model, turns };
 }
 
-function defaultOutputPath(input, parsed) {
-  const shareId =
-    parsed.shareId ||
-    extractShareId(input) ||
-    path.basename(String(input)).replace(/\.[^.]+$/, "") ||
-    "gemini_share";
-  return path.join("exports", "gemini", `gemini_share_${shareId}.md`);
-}
-
 export function renderMarkdown(parsed, meta = {}) {
   const source = parsed.shareId ? `https://gemini.google.com/share/${parsed.shareId}` : meta.canonical || "";
   const metaLines = [
@@ -557,7 +549,7 @@ export async function exportGeminiShare({ input, output = "", downloadAssets = t
 
   const inner = parseBatchExecute(raw);
   const parsed = parseGeminiPayload(inner, meta);
-  const outputPath = output || defaultOutputPath(input, parsed);
+  const outputPath = output || defaultShareOutputPath("gemini", input);
   let markdown = renderMarkdown(parsed, meta);
   const bundle = downloadAssets ? await localizeMarkdownAssets(markdown, parsed, outputPath) : null;
   if (bundle) markdown = bundle.markdown;

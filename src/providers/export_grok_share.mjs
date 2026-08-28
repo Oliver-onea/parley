@@ -22,6 +22,7 @@ import { linkTarget } from "../lib/markdown.mjs";
 import { ensureDir, ensureParent, posixRelative, writeFileAtomic } from "../lib/paths.mjs";
 import { isMainModule, runMain } from "../lib/proc.mjs";
 import { parseJsonText, sanitizeFilename } from "../lib/text.mjs";
+import { defaultShareOutputPath } from "../lib/share-paths.mjs";
 
 const ASSET_ORIGIN = "https://assets.grok.com";
 
@@ -266,15 +267,6 @@ export function renderMarkdown(parsed, meta = {}, assets = null) {
   return `${lines.join("\n").trim()}\n`;
 }
 
-function defaultOutputPath(input, parsed) {
-  const id =
-    parsed.shareId ||
-    extractShareId(input) ||
-    path.basename(String(input)).replace(/\.[^.]+$/, "") ||
-    "grok_share";
-  return path.join("exports", "grok", `grok_share_${id}.md`);
-}
-
 export async function exportGrokShare({ input, output = "", downloadAssets = true } = {}) {
   if (!input) throw new Error("grok requires a share URL or raw share JSON file.");
 
@@ -288,7 +280,7 @@ export async function exportGrokShare({ input, output = "", downloadAssets = tru
   }
 
   const parsed = parseGrokShare(data, meta);
-  const outputPath = output || defaultOutputPath(input, parsed);
+  const outputPath = output || defaultShareOutputPath("grok", input);
   const assets = downloadAssets ? await downloadGrokAssets(parsed, outputPath) : null;
   const markdown = renderMarkdown(parsed, meta, assets);
 

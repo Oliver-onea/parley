@@ -5,13 +5,12 @@ import path from "node:path";
 import test from "node:test";
 
 import {
-  defaultOutputPath,
-  idFromInput,
   inferProvider,
   parseCli,
   runCli,
   sanitizeSegment,
 } from "../src/cli.mjs";
+import { defaultShareOutputPath, idFromInput } from "../src/lib/share-paths.mjs";
 
 test("infers provider from public share URLs", () => {
   assert.equal(inferProvider("https://chatgpt.com/share/example-chatgpt-share"), "chatgpt");
@@ -84,23 +83,29 @@ test("supports --t as a legacy alias for --title", () => {
   assert.equal(parsed.title, "Demo");
 });
 
-test("builds default output path by provider", () => {
-  assert.match(
-    defaultOutputPath("chatgpt", "https://chatgpt.com/share/abc", "exports"),
-    /exports\/chatgpt\/chatgpt_share_abc\.md$/,
-  );
-  assert.match(
-    defaultOutputPath("deepseek", "https://chat.deepseek.com/share/abc", "exports"),
-    /exports\/deepseek\/deepseek_share_abc\.md$/,
-  );
-  assert.match(
-    defaultOutputPath("kimi", "https://www.kimi.com/share/00000000-0000-4000-8000-000000000000", "exports"),
-    /exports\/kimi\/kimi_share_00000000-0000-4000-8000-000000000000\.md$/,
-  );
-  assert.match(
-    defaultOutputPath("claude-share", "https://claude.ai/share/abc", "exports"),
-    /exports\/claude\/share\/claude_share_abc\.md$/,
-  );
+test("builds the same default output path for every provider and input form", () => {
+  const providers = [
+    ["chatgpt", ["chatgpt"], "chatgpt_share"],
+    ["deepseek", ["deepseek"], "deepseek_share"],
+    ["gemini", ["gemini"], "gemini_share"],
+    ["kimi", ["kimi"], "kimi_share"],
+    ["claude-share", ["claude", "share"], "claude_share"],
+    ["grok", ["grok"], "grok_share"],
+  ];
+  const inputs = [
+    ["https://example.test/share/url-id", "url-id"],
+    ["raw-id", "raw-id"],
+    ["fixtures/conversation.raw.json", "conversation.raw"],
+  ];
+
+  for (const [providerName, outputParts, prefix] of providers) {
+    for (const [input, id] of inputs) {
+      assert.equal(
+        defaultShareOutputPath(providerName, input, "exports"),
+        path.join("exports", ...outputParts, `${prefix}_${id}.md`),
+      );
+    }
+  }
 });
 
 test("runCli exports a raw Claude share JSON end to end", async () => {

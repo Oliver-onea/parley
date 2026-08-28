@@ -5,13 +5,13 @@
 // `/api/v0/share/content?share_id=<id>` used by the share page.
 
 import fs from "node:fs/promises";
-import path from "node:path";
 
 import { fetchText } from "../lib/http.mjs";
 import { fenced, linkTarget } from "../lib/markdown.mjs";
 import { ensureParent, writeFileAtomic } from "../lib/paths.mjs";
 import { isMainModule, runMain } from "../lib/proc.mjs";
-import { formatFileSize, sanitizeSegment } from "../lib/text.mjs";
+import { defaultShareOutputPath } from "../lib/share-paths.mjs";
+import { formatFileSize } from "../lib/text.mjs";
 import { isoFromUnixSeconds } from "../lib/time.mjs";
 
 const USAGE = `Usage:
@@ -181,11 +181,6 @@ export function buildMarkdown(data, source) {
   return { markdown: lines.join("\n"), messages };
 }
 
-function defaultOutputPath(input) {
-  const shareId = extractShareId(input) || sanitizeSegment(path.basename(input).replace(/\.[^.]+$/, ""));
-  return path.join("exports", "deepseek", `deepseek_share_${sanitizeSegment(shareId)}.md`);
-}
-
 export async function exportDeepSeekShare({ input, output = "" } = {}) {
   if (!input) throw new Error("deepseek requires a share URL or saved share JSON file.");
 
@@ -206,7 +201,7 @@ export async function exportDeepSeekShare({ input, output = "" } = {}) {
   }
 
   const { markdown, messages } = buildMarkdown(data, source);
-  const outputPath = output || defaultOutputPath(input);
+  const outputPath = output || defaultShareOutputPath("deepseek", input);
 
   await ensureParent(outputPath);
   await writeFileAtomic(outputPath, markdown);

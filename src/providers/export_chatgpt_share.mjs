@@ -21,7 +21,8 @@ import { fetchText, fetchWithRetry } from "../lib/http.mjs";
 import { fenced, linkTarget, tableCell } from "../lib/markdown.mjs";
 import { ensureDir, ensureParent, posixRelative, writeFileAtomic } from "../lib/paths.mjs";
 import { isMainModule, runMain } from "../lib/proc.mjs";
-import { sanitizeFilename, sanitizeSegment } from "../lib/text.mjs";
+import { defaultShareOutputPath } from "../lib/share-paths.mjs";
+import { sanitizeFilename } from "../lib/text.mjs";
 import { isoFromUnixSeconds } from "../lib/time.mjs";
 
 const USAGE = `Usage:
@@ -38,13 +39,6 @@ anonymous share file endpoint by default; use --no-assets to skip.`;
 
 function isUrl(value) {
   return /^https?:\/\//i.test(value);
-}
-
-function defaultOutputPath(source) {
-  const base = isUrl(source)
-    ? sanitizeSegment(source.replace(/^https?:\/\//, ""), "chatgpt_share")
-    : sanitizeSegment(path.basename(source).replace(/\.[^.]+$/, ""), "chatgpt_share");
-  return path.join("exports", "chatgpt", `${base}.md`);
 }
 
 async function fetchSharePage(url) {
@@ -569,7 +563,7 @@ export async function exportChatGptShare({ input, output = "", downloadAssets = 
   const table = JSON.parse(serializedArray.trim());
   const root = decodeSerializedGraph(table);
   const data = findConversationData(root);
-  const outputPath = output || defaultOutputPath(input);
+  const outputPath = output || defaultShareOutputPath("chatgpt", input);
 
   const nodes = data.linear_conversation || [];
   const attachments = collectAttachments(nodes);

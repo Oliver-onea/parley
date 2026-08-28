@@ -4,7 +4,6 @@
 // snapshot JSON file to Markdown.
 
 import fs from "node:fs/promises";
-import path from "node:path";
 
 import {
   extractTextFromContent,
@@ -17,6 +16,7 @@ import { scalar } from "../lib/markdown.mjs";
 import { ensureParent, writeFileAtomic } from "../lib/paths.mjs";
 import { parseJsonText } from "../lib/text.mjs";
 import { isMainModule, runMain } from "../lib/proc.mjs";
+import { defaultShareOutputPath } from "../lib/share-paths.mjs";
 
 const USAGE = `Usage:
   node src/providers/export_claude_share.mjs <claude-share-url|raw-json-file> [output.md]
@@ -204,11 +204,6 @@ export function renderMarkdown(data, meta = {}) {
   return `${lines.join("\n").trim()}\n`;
 }
 
-function defaultOutputPath(input, data, meta = {}) {
-  const id = data.uuid || meta.snapshotId || extractSnapshotId(input) || "claude_share";
-  return path.join("exports", "claude", "share", `claude_share_${id}.md`);
-}
-
 export async function exportClaudeShare({ input, output = "" } = {}) {
   if (!input) throw new Error("claude-share requires a share URL or raw JSON file.");
 
@@ -220,7 +215,7 @@ export async function exportClaudeShare({ input, output = "" } = {}) {
     data = parseJsonText(await fs.readFile(input, "utf8"));
   }
 
-  const outputPath = output || defaultOutputPath(input, data, meta);
+  const outputPath = output || defaultShareOutputPath("claude-share", input);
   await ensureParent(outputPath);
   await writeFileAtomic(outputPath, renderMarkdown(data, meta));
 

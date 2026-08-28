@@ -21,7 +21,8 @@ import { fetchText, fetchWithRetry, USER_AGENT } from "../lib/http.mjs";
 import { fenced, linkTarget } from "../lib/markdown.mjs";
 import { ensureDir, ensureParent, posixRelative, writeFileAtomic } from "../lib/paths.mjs";
 import { isMainModule, runMain } from "../lib/proc.mjs";
-import { formatFileSize, sanitizeFilename, sanitizeSegment } from "../lib/text.mjs";
+import { defaultShareOutputPath } from "../lib/share-paths.mjs";
+import { formatFileSize, sanitizeFilename } from "../lib/text.mjs";
 import { isoFromUnixSeconds } from "../lib/time.mjs";
 
 const USAGE = `Usage:
@@ -445,11 +446,6 @@ export function buildMarkdown(parsed, source, { assets = null } = {}) {
   return { markdown: lines.join("\n"), messages: parsed.messages };
 }
 
-function defaultOutputPath(input) {
-  const shareId = extractShareId(input) || sanitizeSegment(path.basename(input).replace(/\.[^.]+$/, ""));
-  return path.join("exports", "kimi", `kimi_share_${sanitizeSegment(shareId)}.md`);
-}
-
 export async function exportKimiShare({ input, output = "", downloadAssets = true } = {}) {
   if (!input) throw new Error("kimi requires a share URL or saved share HTML file.");
 
@@ -475,7 +471,7 @@ export async function exportKimiShare({ input, output = "", downloadAssets = tru
   }
 
   const parsed = parseKimiShare(shareQuery.state.data);
-  const outputPath = output || defaultOutputPath(input, parsed);
+  const outputPath = output || defaultShareOutputPath("kimi", input);
 
   const attachments = collectAttachments(parsed.messages);
   let assets = null;
