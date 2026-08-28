@@ -466,11 +466,36 @@ test("kimi: extracts share ids from URLs and bare ids", () => {
   assert.equal(extractKimiShareId(""), "");
 });
 
-test("kimi: extracts and evaluates the hydration state", () => {
-  const html = `<html><script>window.HYDRATION_INIT_STATE={queries:[{queryKey:["other"],state:{data:{}}},{queryKey:["share","share-id"],state:{data:{chat:{name:"Fixture"},messages:[]}}}]};</script></html>`;
+test("kimi: extracts and parses the hydration state", () => {
+  const html = `<html><script>window.HYDRATION_INIT_STATE={"queries":[{"queryKey":["other"],"state":{"data":{}}},{"queryKey":["share","share-id"],"state":{"data":{"chat":{"name":"Fixture"},"messages":[]}}}]};</script></html>`;
   const state = extractHydrationState(html);
   const shareQuery = state.queries.find((q) => q.queryKey[0] === "share");
   assert.equal(shareQuery.state.data.chat.name, "Fixture");
+});
+
+test("kimi: parses BigInt and undefined hydration values safely", () => {
+  const html = `<html><script>window.HYDRATION_INIT_STATE={"queries":[{"queryKey":["share"],"state":{"data":{"large":BigInt(9007199254740993),"missing":undefined}}}]};</script></html>`;
+  const state = extractHydrationState(html);
+  const data = state.queries[0].state.data;
+  assert.equal(data.large, "9007199254740993");
+  assert.equal(data.missing, null);
+});
+
+test("kimi: preserves undefined and BigInt text inside message strings", () => {
+  const html = `<html><script>window.HYDRATION_INIT_STATE={"queries":[{"queryKey":["share"],"state":{"data":{"messages":[{"blocks":[{"content":{"case":"text","value":{"content":"undefined BigInt(1)"}}}]}]}}}]};</script></html>`;
+  const state = extractHydrationState(html);
+  assert.equal(state.queries[0].state.data.messages[0].blocks[0].content.value.content, "undefined BigInt(1)");
+});
+
+test("kimi: active hydration content throws instead of executing", () => {
+  globalThis.__kimiHydrationExecuted = false;
+  try {
+    const html = `<html><script>window.HYDRATION_INIT_STATE={"attack":(globalThis.__kimiHydrationExecuted=true)};</script></html>`;
+    assert.throws(() => extractHydrationState(html), /Could not parse Kimi hydration state/);
+    assert.equal(globalThis.__kimiHydrationExecuted, false);
+  } finally {
+    delete globalThis.__kimiHydrationExecuted;
+  }
 });
 
 test("kimi: parses share data into markdown", () => {

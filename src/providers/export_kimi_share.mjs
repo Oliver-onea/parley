@@ -2,8 +2,8 @@
 
 // Export a public Kimi share (kimi.com/share/<uuid>) or a saved raw share HTML
 // file to Markdown. The share page embeds the conversation as a dehydrated
-// React Query state in `window.HYDRATION_INIT_STATE`; this module evaluates that
-// object literal and renders the message blocks.
+// React Query state in `window.HYDRATION_INIT_STATE`; this module parses that
+// state without executing page content and renders the message blocks.
 
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -52,6 +52,76 @@ function extractScriptTags(html) {
   return scripts;
 }
 
+function isIdentifierCharacter(value) {
+  return value !== undefined && /[A-Za-z0-9_$]/.test(value);
+}
+
+function skipStringLiteral(source, start) {
+  const quote = source[start];
+  let index = start + 1;
+  while (index < source.length) {
+    if (source[index] === "\\") {
+      index += 2;
+      continue;
+    }
+    index += 1;
+    if (source[index - 1] === quote) break;
+  }
+  return index;
+}
+
+function isValuePosition(source, start, end) {
+  let before = start - 1;
+  while (before >= 0 && /\s/.test(source[before])) before -= 1;
+  let after = end;
+  while (after < source.length && /\s/.test(source[after])) after += 1;
+
+  const beforeIsValueDelimiter =
+    before < 0 || source[before] === ":" || source[before] === "," || source[before] === "[";
+  const afterIsValueDelimiter =
+    after >= source.length || source[after] === "," || source[after] === "]" || source[after] === "}";
+  return beforeIsValueDelimiter && afterIsValueDelimiter;
+}
+
+function preprocessHydrationExpression(expr) {
+  let output = "";
+  let index = 0;
+
+  while (index < expr.length) {
+    const char = expr[index];
+    if (char === '"' || char === "'" || char === "`") {
+      const end = skipStringLiteral(expr, index);
+      output += expr.slice(index, end);
+      index = end;
+      continue;
+    }
+
+    if (expr.startsWith("BigInt", index) && !isIdentifierCharacter(expr[index - 1])) {
+      const match = expr.slice(index).match(/^BigInt\s*\(\s*([+-]?\d+)\s*\)/);
+      const end = match ? index + match[0].length : index;
+      if (match && !isIdentifierCharacter(expr[end]) && isValuePosition(expr, index, end)) {
+        output += JSON.stringify(match[1]);
+        index = end;
+        continue;
+      }
+    }
+
+    if (expr.startsWith("undefined", index) && !isIdentifierCharacter(expr[index - 1])) {
+      const end = index + "undefined".length;
+      if (!isIdentifierCharacter(expr[end]) && isValuePosition(expr, index, end)) {
+        output += "null";
+        index = end;
+        continue;
+      }
+    }
+
+    output += char;
+    index += 1;
+  }
+
+  return output;
+}
+
 export function extractHydrationState(html) {
   const scripts = extractScriptTags(html);
   const stateScript = scripts.find((script) => script.trim().startsWith("window.HYDRATION_INIT_STATE="));
@@ -61,9 +131,9 @@ export function extractHydrationState(html) {
 
   const expr = stateScript.trim().replace(/^window\.HYDRATION_INIT_STATE=/, "").replace(/;\s*$/, "");
   try {
-    // The dehydrated state contains BigInt(...) and `undefined` values, which
-    // are valid JavaScript but not JSON. Evaluate it in a sandboxed function.
-    return new Function(`return (${expr});`)();
+    // Normalize the two non-JSON values while preserving quoted content, then
+    // let JSON.parse reject every other JavaScript expression.
+    return JSON.parse(preprocessHydrationExpression(expr));
   } catch (error) {
     throw new Error(`Could not parse Kimi hydration state: ${error.message || String(error)}`);
   }
